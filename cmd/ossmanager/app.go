@@ -11,7 +11,6 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/spf13/viper"
 
 	"github.com/ossmanager/internal/config"
 	"github.com/ossmanager/internal/logger"
@@ -98,28 +97,37 @@ func logDependencyVersions() {
 }
 
 // initConfig initializes the configuration system
-// This is a placeholder that will be fully implemented in Task 3
 func initConfig() error {
-	// Load configuration
-	cfg, err := config.LoadConfig()
-	if err != nil {
+	// 创建配置管理器实例
+	configManager := config.NewConfigManager()
+
+	// 加载配置
+	if err := configManager.Load(); err != nil {
 		return fmt.Errorf("failed to load configuration: %w", err)
 	}
 
-	// Basic Viper setup (for backward compatibility with existing code)
-	viper.SetConfigName("config")
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath("$HOME/.ossmanager")
-	viper.AddConfigPath(".")
+	// 获取配置文件路径
+	configPath := configManager.GetConfigPath()
+	if configPath != "" {
+		logger.Info("Configuration loaded from %s", configPath)
+	} else {
+		logger.Info("Using default configuration (no config file found)")
+	}
 
-	// Set default values
-	viper.SetDefault("app.log_level", cfg.App.LogLevel)
-	viper.SetDefault("app.log_file", cfg.App.LogFile)
+	// 注册配置变更回调，记录日志
+	configManager.AddCallback("app.log_level", func() {
+		newLevel := configManager.GetConfig().App.LogLevel
+		logger.Info("Log level changed to %s", newLevel)
+		// 设置新的日志级别
+		logger.SetLevel(logger.LogLevelFromString(newLevel))
+	})
 
-	// Read config file (ignore error if file doesn't exist)
-	_ = viper.ReadInConfig()
+	// 其他配置变更回调也可以在这里添加
 
-	fmt.Println("Configuration initialized")
+	// 导出配置管理器，使其他模块可以访问它
+	config.SetGlobalConfigManager(configManager)
+
+	logger.Info("Configuration system initialized")
 	return nil
 }
 
