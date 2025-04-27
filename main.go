@@ -44,4 +44,8 @@ func main() {
 
 	// Log initialization completion
 	logger.Printf("OSS Manager initialization completed in %v", time.Since(startTime))
+
+	// Ensure all application logs are flushed
+	// Note: This is a placeholder for future implementation
+	// The logger.Shutdown() function will be called here once it's implemented
 }

@@ -124,15 +124,53 @@ func initConfig() error {
 }
 
 // initLogger initializes the logging system
-// This is a placeholder that will be fully implemented in Task 2
 func initLogger() error {
-	// Initialize logger with default settings
-	err := logger.Initialize(logger.INFO, "logs")
+	// Create a custom log configuration
+	logConfig := &logger.LogConfig{
+		Level:           logger.INFO,
+		Format:          logger.TEXT,
+		LogDir:          "logs",
+		LogFile:         "ossmanager.log",
+		MaxSize:         10,   // 10 MB
+		MaxBackups:      5,    // 5 files
+		MaxAge:          30,   // 30 days
+		Compress:        true, // compress old log files
+		ToConsole:       true, // also log to console
+		TimestampFormat: "2006-01-02 15:04:05.000",
+	}
+
+	// Try to get log level from environment
+	logLevelEnv := os.Getenv("OSSMANAGER_LOG_LEVEL")
+	if logLevelEnv != "" {
+		logConfig.Level = logger.LogLevelFromString(logLevelEnv)
+	}
+
+	// Initialize logger with the configuration
+	err := logger.Initialize(logConfig)
 	if err != nil {
 		return fmt.Errorf("failed to initialize logger: %w", err)
 	}
 
-	logger.Info("Logger initialized")
+	// Log system information
+	sysLogger := logger.WithContext(map[string]interface{}{
+		"os":          runtime.GOOS,
+		"arch":        runtime.GOARCH,
+		"go_version":  runtime.Version(),
+		"num_cpu":     runtime.NumCPU(),
+		"app_version": AppVersion,
+	})
+
+	// Log initialization success
+	sysLogger.Info("OSS Manager %s starting up", AppVersion)
+	logger.Info("Logger initialized successfully with level %s", logConfig.Level.String())
+	logger.Debug("Debug logging is enabled")
+
+	// Log different levels for testing
+	logger.Debug("This is a debug message")
+	logger.Info("This is an info message")
+	logger.Warn("This is a warning message")
+	logger.Error("This is an error message")
+
 	return nil
 }
 
@@ -150,10 +188,10 @@ func initOSS() error {
 	_, err := ossClient.NewClient(ossConfig)
 	if err != nil {
 		// Just log the error for now, don't return it
-		fmt.Printf("Note: OSS client initialization failed (expected in placeholder): %v\n", err)
+		logger.Warn("OSS client initialization failed (expected in placeholder): %v", err)
 	}
 
-	fmt.Println("OSS client placeholder initialized")
+	logger.Info("OSS client placeholder initialized")
 	return nil
 }
 
@@ -180,5 +218,6 @@ func initUI() error {
 	// Just to use the ui import
 	_ = ui.NewModel
 
+	logger.Info("UI components initialized")
 	return nil
 }
