@@ -1,0 +1,38 @@
+# Go specific
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+/docs/
+/vendor/
+
+# Binary
+/ossmanager
+/bin/
+
+# IDE specific
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS specific
+.DS_Store
+Thumbs.db
+.directory
+
+# Project specific
+/logs/
+*.log
+/dist/
+/coverage/
+/tmp/
+
+# Configuration files that might contain sensitive information
+config.local.yaml
+.env
+
