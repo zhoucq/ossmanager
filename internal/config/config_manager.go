@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,6 +29,7 @@ type ConfigManager struct {
 	callbacks     map[string][]ConfigChangeCallback
 	callbackMutex sync.RWMutex
 	loaded        bool
+	credManager   CredentialManager
 }
 
 // NewConfigManager creates a new configuration manager
@@ -44,11 +46,12 @@ func NewConfigManager() *ConfigManager {
 	v.AddConfigPath(".")
 
 	cm := &ConfigManager{
-		viper:     v,
-		config:    DefaultConfig(),
-		observers: make([]ConfigObserver, 0),
-		callbacks: make(map[string][]ConfigChangeCallback),
-		loaded:    false,
+		viper:       v,
+		config:      DefaultConfig(),
+		observers:   make([]ConfigObserver, 0),
+		callbacks:   make(map[string][]ConfigChangeCallback),
+		loaded:      false,
+		credManager: nil,
 	}
 
 	// Set up config change watching
@@ -294,4 +297,94 @@ func (cm *ConfigManager) GetBoolWithDefault(key string, defaultValue bool) bool 
 		return defaultValue
 	}
 	return cm.viper.GetBool(key)
+}
+
+// InitCredentialManager 初始化凭证管理器
+func (cm *ConfigManager) InitCredentialManager(password string) error {
+	if cm.credManager != nil {
+		// 已经初始化
+		return nil
+	}
+
+	// 获取凭证文件路径
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("无法获取用户主目录: %w", err)
+	}
+
+	// 创建凭证文件路径
+	credFile := filepath.Join(homeDir, ".ossmanager", "credentials.json")
+
+	// 创建凭证管理器
+	credManager, err := NewFileCredentialManager(credFile, password)
+	if err != nil {
+		return fmt.Errorf("初始化凭证管理器失败: %w", err)
+	}
+
+	cm.credManager = credManager
+	logger.Info("已初始化凭证管理器")
+	return nil
+}
+
+// GetCredentialManager 返回凭证管理器
+func (cm *ConfigManager) GetCredentialManager() CredentialManager {
+	return cm.credManager
+}
+
+// SetCredentialManager 设置凭证管理器（用于测试或自定义管理器）
+func (cm *ConfigManager) SetCredentialManager(manager CredentialManager) {
+	cm.credManager = manager
+}
+
+// GetAccountCredential 获取指定账户的凭证
+func (cm *ConfigManager) GetAccountCredential(accountID string) (OSSCredential, error) {
+	if cm.credManager == nil {
+		return OSSCredential{}, errors.New("凭证管理器未初始化")
+	}
+
+	// 在配置中查找账户信息
+	// 示例实现：我们假设账户列表存储在配置中的 accounts 数组中
+	var credentialKey string
+	var found bool
+
+	// 从配置中获取账户列表
+	accounts := cm.viper.Get("accounts")
+	if accounts == nil {
+		return OSSCredential{}, fmt.Errorf("找不到账户配置")
+	}
+
+	// 遍历账户列表，查找指定ID的账户
+	accountsList, ok := accounts.([]interface{})
+	if !ok {
+		return OSSCredential{}, fmt.Errorf("账户配置格式无效")
+	}
+
+	for _, acc := range accountsList {
+		account, ok := acc.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		id, ok := account["id"].(string)
+		if !ok {
+			continue
+		}
+
+		if id == accountID {
+			credKey, ok := account["credentials_key"].(string)
+			if !ok {
+				return OSSCredential{}, fmt.Errorf("账户 %s 没有有效的凭证键", accountID)
+			}
+			credentialKey = credKey
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return OSSCredential{}, fmt.Errorf("找不到ID为 %s 的账户", accountID)
+	}
+
+	// 使用凭证键从凭证管理器获取凭证
+	return cm.credManager.GetCredential(credentialKey)
 }

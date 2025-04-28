@@ -56,29 +56,50 @@ To run the application:
 ./ossmanager
 ```
 
+## Features
+
+### Credential Management
+
+The application includes a secure credential management system with the following features:
+
+- **Secure Storage**: OSS credentials (AccessKeyID and AccessKeySecret) are stored in an encrypted format using AES-256-GCM encryption.
+- **Password Protection**: All credentials are protected by a master password.
+- **Master Password Management**: Users can change the master password securely, which will re-encrypt all stored credentials.
+- **Multiple Accounts**: Support for managing credentials for multiple OSS accounts.
+- **Secure File Format**: Credentials are stored in a JSON file with appropriate file permissions.
+- **Password Verification**: The system verifies the master password by attempting to decrypt stored credentials.
+
+### Configuration Management
+
+Configuration capabilities include:
+
+- **Hot-reload**: Configuration changes are automatically detected and applied.
+- **Observers Pattern**: Components can register to be notified of configuration changes.
+- **Default Values**: Sensible defaults for all configuration options.
+
+### Logging System
+
+The application includes a flexible logging system with:
+
+- **Multiple Log Levels**: Support for Debug, Info, Warn, Error, and Fatal log levels.
+- **Context Support**: Logging with contextual information.
+- **File and Console Output**: Logs can be directed to files, console, or both.
+
 ## Development Status
 
-This project is under active development. The current implementation includes:
+This project is under active development. Current implementations include:
 
+- Complete credential management system
+- Configuration management with hot-reload support
+- Robust logging system
 - Basic project structure
-- Dependency management
-- Placeholder implementations for key components
 
-The next tasks will focus on implementing the core functionality as outlined in the development task list.
-
-## Initialization Results
-
-The project initialization was successful:
-
-- All dependencies were installed correctly
-- The project compiles successfully
-- The project structure follows Go best practices
+The next tasks will focus on implementing the OSS interface and user interface components.
 
 ## Next Steps
 
 The next development tasks will focus on:
 
-1. Implementing the logging system (Task 2)
-2. Implementing the configuration management (Task 3)
-3. Implementing the OSS interface (Tasks 7-11)
-4. Implementing the user interface (Tasks 17-23)
+1. Implementing the OSS interface (Tasks 7-11)
+2. Implementing the user interface (Tasks 17-23)
+3. Testing and optimization
